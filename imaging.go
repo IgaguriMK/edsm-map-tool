@@ -1,7 +1,7 @@
 package main
 
 import (
-	"./systemCoordinate"
+	"./sysCoord"
 	"flag"
 	"fmt"
 	"image"
@@ -75,7 +75,7 @@ func main() {
 
 	//////////////
 
-	coords := systemCoordinate.LoadCoords(*coords_file_name)
+	coords := sysCoord.LoadCoords(*coords_file_name)
 	max, min := maxMin(coords)
 
 	s_max, t_max := getPosByPlane(plane, chunk_size, max)
@@ -204,7 +204,7 @@ func white_red_heatmap(img *image.RGBA, s, t, s_size, t_size, s_min, t_min, chun
 	}
 }
 
-func getPosByPlane(plane Plane, chunk_size int, coord systemCoordinate.Coord) (int, int) {
+func getPosByPlane(plane Plane, chunk_size int, coord sysCoord.Coord) (int, int) {
 	if plane == XZ {
 		return chunk(chunk_size, coord.X), chunk(chunk_size, coord.Z)
 	} else if plane == ZY {
@@ -217,8 +217,8 @@ func chunk(chunk_size int, val float32) int {
 	return int(val / float32(chunk_size))
 }
 
-func maxMin(coords []systemCoordinate.Coord) (systemCoordinate.Coord, systemCoordinate.Coord) {
-	var max, min systemCoordinate.Coord
+func maxMin(coords []sysCoord.Coord) (sysCoord.Coord, sysCoord.Coord) {
+	var max, min sysCoord.Coord
 
 	for _, c := range coords {
 		if max.X < c.X {
