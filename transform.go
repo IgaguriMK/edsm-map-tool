@@ -38,6 +38,12 @@ func main() {
 			max := pop(&commands)
 			command_cut(&coords, min, max, func(c sysCoord.Coord) float32 { return c.Z })
 			fmt.Println(command, min, max)
+		case ":add":
+			x := pop(&commands)
+			y := pop(&commands)
+			z := pop(&commands)
+			command_add(&coords, x, y, z)
+			fmt.Println(command, x, y, z)
 		default:
 			fmt.Fprintf(os.Stderr, "Error: unknown command '%s'\n", command)
 		}
@@ -78,4 +84,17 @@ func command_cut(coords *[]sysCoord.Coord, min_str, max_str string, axis func(sy
 	}
 
 	*coords = filtered
+}
+
+func command_add(coords *[]sysCoord.Coord, xs, ys, zs string) {
+	x, err_x := strconv.ParseFloat(xs, 32)
+	y, err_y := strconv.ParseFloat(ys, 32)
+	z, err_z := strconv.ParseFloat(zs, 32)
+	if err_x != nil || err_y != nil || err_z != nil {
+		fmt.Fprintln(os.Stderr, "Error(:add): invalid argument")
+		os.Exit(1)
+	}
+
+	c := sysCoord.Coord{float32(x), float32(y), float32(z)}
+	*coords = append(*coords, c)
 }
