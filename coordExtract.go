@@ -28,5 +28,10 @@ func main() {
 		os.Exit(2)
 	}
 
-	sysCoord.WriteCoords(*outFileName, systems)
+	coords := make([]sysCoord.Coord, len(systems))
+	for i := 0; i < len(systems); i++ {
+		coords[i] = systems[i].Coord
+	}
+
+	sysCoord.WriteCoords(*outFileName, coords)
 }

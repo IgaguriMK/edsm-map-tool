@@ -1,4 +1,4 @@
-package systemCoordinate
+package sysCoord
 
 import (
 	"bytes"
@@ -38,7 +38,7 @@ func LoadSystems(fileName string) ([]SystemCoord, error) {
 	return systemCoords, nil
 }
 
-func WriteCoords(fileName string, systems []SystemCoord) {
+func WriteCoords(fileName string, coords []Coord) {
 	outFile, err := os.Create(fileName)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error: Cannnot open output file.\n    %s", err)
@@ -46,9 +46,7 @@ func WriteCoords(fileName string, systems []SystemCoord) {
 	}
 	defer outFile.Close()
 
-	for _, system := range systems {
-		coord := system.Coord
-
+	for _, coord := range coords {
 		writeBytes(outFile, toBytes(coord.X))
 		writeBytes(outFile, toBytes(coord.Y))
 		writeBytes(outFile, toBytes(coord.Z))
