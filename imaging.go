@@ -1,23 +1,15 @@
 package main
 
 import (
-	"bytes"
-	"encoding/binary"
+	"./systemCoordinate"
 	"flag"
 	"fmt"
 	"image"
 	"image/color"
 	"image/png"
-	"io"
 	"math"
 	"os"
 )
-
-type Coord struct {
-	X float32
-	Y float32
-	Z float32
-}
 
 type Plane int
 
@@ -83,7 +75,7 @@ func main() {
 
 	//////////////
 
-	coords := loadCoords(*coords_file_name)
+	coords := systemCoordinate.LoadCoords(*coords_file_name)
 	max, min := maxMin(coords)
 
 	s_max, t_max := getPosByPlane(plane, chunk_size, max)
@@ -212,7 +204,7 @@ func white_red_heatmap(img *image.RGBA, s, t, s_size, t_size, s_min, t_min, chun
 	}
 }
 
-func getPosByPlane(plane Plane, chunk_size int, coord Coord) (int, int) {
+func getPosByPlane(plane Plane, chunk_size int, coord systemCoordinate.Coord) (int, int) {
 	if plane == XZ {
 		return chunk(chunk_size, coord.X), chunk(chunk_size, coord.Z)
 	} else if plane == ZY {
@@ -225,8 +217,8 @@ func chunk(chunk_size int, val float32) int {
 	return int(val / float32(chunk_size))
 }
 
-func maxMin(coords []Coord) (Coord, Coord) {
-	var max, min Coord
+func maxMin(coords []systemCoordinate.Coord) (systemCoordinate.Coord, systemCoordinate.Coord) {
+	var max, min systemCoordinate.Coord
 
 	for _, c := range coords {
 		if max.X < c.X {
@@ -250,51 +242,4 @@ func maxMin(coords []Coord) (Coord, Coord) {
 	}
 
 	return max, min
-}
-
-func loadCoords(file_name string) []Coord {
-	var coords []Coord
-
-	file, err_f := os.Open(file_name)
-	if err_f != nil {
-		fmt.Fprintf(os.Stderr, "Error: Cannnot open input file.\n    %s", err_f)
-		os.Exit(1)
-	}
-	defer file.Close()
-
-	buffer := make([]byte, 4*3)
-
-	for {
-		read_size, err_r := io.ReadFull(file, buffer)
-		if err_r == io.EOF {
-			break
-		}
-		if err_r != nil {
-			fmt.Fprintf(os.Stderr, "Error: Cannnot read from file.\n    %s", err_r)
-			os.Exit(1)
-		}
-		if read_size < 4*3 {
-			fmt.Fprint(os.Stderr, "Error: read too few bytes.")
-			os.Exit(1)
-		}
-
-		var coord Coord
-		coord.X = decodeFloat32(buffer[0:4])
-		coord.Y = decodeFloat32(buffer[4:8])
-		coord.Z = decodeFloat32(buffer[8:12])
-
-		coords = append(coords, coord)
-	}
-
-	return coords
-}
-
-func decodeFloat32(raw []byte) float32 {
-	var val float32
-	buf := bytes.NewReader(raw)
-	err := binary.Read(buf, binary.LittleEndian, &val)
-	if err != nil {
-		panic(err)
-	}
-	return val
 }
