@@ -27,12 +27,12 @@ type SystemCoord struct {
 func LoadSystems(fileName string) ([]SystemCoord, error) {
 	bytes, err := ioutil.ReadFile(fileName)
 	if err != nil {
-		return nil, fmt.Errorf("IO error: %s", err)
+		return nil, fmt.Errorf("IO error: %s\n", err)
 	}
 
 	var systemCoords []SystemCoord
 	if err := json.Unmarshal(bytes, &systemCoords); err != nil {
-		return nil, fmt.Errorf("JSON error: %s", err)
+		return nil, fmt.Errorf("JSON error: %s\n", err)
 	}
 
 	return systemCoords, nil
@@ -41,7 +41,7 @@ func LoadSystems(fileName string) ([]SystemCoord, error) {
 func WriteCoords(fileName string, coords []Coord) {
 	outFile, err := os.Create(fileName)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error: Cannnot open output file.\n    %s", err)
+		fmt.Fprintf(os.Stderr, "Error: Cannnot open output file.\n    %s\n", err)
 		os.Exit(3)
 	}
 	defer outFile.Close()
@@ -58,7 +58,7 @@ func toBytes(val float32) []byte {
 
 	err_b := binary.Write(buf, binary.LittleEndian, val)
 	if err_b != nil {
-		fmt.Fprintf(os.Stderr, "Error: converting to binary\n    %s", err_b)
+		fmt.Fprintf(os.Stderr, "Error: converting to binary\n    %s\n", err_b)
 		os.Exit(4)
 	}
 
@@ -68,7 +68,7 @@ func toBytes(val float32) []byte {
 func writeBytes(outFile *os.File, bytes []byte) {
 	_, err_w := outFile.Write(bytes)
 	if err_w != nil {
-		fmt.Fprintf(os.Stderr, "Error: failed to write\n    %s", err_w)
+		fmt.Fprintf(os.Stderr, "Error: failed to write\n    %s\n", err_w)
 		os.Exit(4)
 	}
 }
@@ -78,7 +78,7 @@ func LoadCoords(file_name string) []Coord {
 
 	file, err_f := os.Open(file_name)
 	if err_f != nil {
-		fmt.Fprintf(os.Stderr, "Error: Cannnot open input file.\n    %s", err_f)
+		fmt.Fprintf(os.Stderr, "Error: Cannnot open input file.\n    %s\n", err_f)
 		os.Exit(1)
 	}
 	defer file.Close()
@@ -91,7 +91,7 @@ func LoadCoords(file_name string) []Coord {
 			break
 		}
 		if err_r != nil {
-			fmt.Fprintf(os.Stderr, "Error: Cannnot read from file.\n    %s", err_r)
+			fmt.Fprintf(os.Stderr, "Error: Cannnot read from file.\n    %s\n", err_r)
 			os.Exit(1)
 		}
 		if read_size < 4*3 {
