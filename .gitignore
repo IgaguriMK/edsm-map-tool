@@ -2,6 +2,7 @@
 *.exe
 coordExtract
 imaging
+transform
 
 *.png
 *.bin
