@@ -33,7 +33,7 @@ func main() {
 	writeTo(*outFileName, systems)
 }
 
-func writeTo(fileName string, systems []systemCoordinate.SystemCoordinate) {
+func writeTo(fileName string, systems []systemCoordinate.SystemCoord) {
 	outFile, err := os.Create(fileName)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error: Cannnot open output file.\n    %s", err)
@@ -42,7 +42,7 @@ func writeTo(fileName string, systems []systemCoordinate.SystemCoordinate) {
 	defer outFile.Close()
 
 	for _, system := range systems {
-		coord := system.Coordinate
+		coord := system.Coord
 
 		writeBytes(outFile, toBytes(coord.X))
 		writeBytes(outFile, toBytes(coord.Y))
