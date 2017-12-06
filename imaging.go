@@ -26,7 +26,7 @@ func main() {
 	var chunk_size int
 	flag.IntVar(&chunk_size, "s", 20, "pixcel size in LY")
 	curve_name := flag.String("hc", "log", "heatmap curve (liner, log)")
-	heatmap_name := flag.String("ht", "colorful", "heatmap type (colorful, white, white_red)")
+	heatmap_name := flag.String("ht", "colorful", "heatmap type (colorful, coloful_noback,  white, white_red)")
 	var heat_scale float64
 	flag.Float64Var(&heat_scale, "hs", 0.1, "heatmap scale")
 	var no_adjust bool
@@ -64,6 +64,8 @@ func main() {
 	switch *heatmap_name {
 	case "colorful":
 		heatmap = coloful_heatmap
+	case "colorful_noback":
+		heatmap = coloful_noback_heatmap
 	case "white":
 		heatmap = white_heatmap
 	case "white_red":
@@ -188,6 +190,18 @@ func coloful_heatmap(img *image.RGBA, s, t, s_size, t_size, s_min, t_min, chunk_
 		a = 64
 	}
 	img.Set(s, t_size-t, color.RGBA{0, 0, 0, a})
+}
+
+func coloful_noback_heatmap(img *image.RGBA, s, t, s_size, t_size, s_min, t_min, chunk_size int, v float64) {
+	if v > 0 {
+		r := uint8(255 * v * v)
+		g := uint8(255 * (1 - 4*(v-0.5)*(v-0.5)))
+		b := uint8(255 * (1 - v*v))
+		img.Set(s, t_size-t, color.RGBA{r, g, b, 255})
+		return
+	}
+
+	img.Set(s, t_size-t, color.RGBA{0, 0, 0, 255})
 }
 
 func white_heatmap(img *image.RGBA, s, t, s_size, t_size, s_min, t_min, chunk_size int, v float64) {
