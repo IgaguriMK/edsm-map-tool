@@ -13,3 +13,10 @@ transform:
 .PHONY: imaging
 imaging:
 	go build imaging.go
+
+.PHONY: clean
+clean:
+	- rm coordExtract
+	- rm transform
+	- rm imaging
+	- rm *.exe
