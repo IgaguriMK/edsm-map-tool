@@ -33,6 +33,8 @@ func main() {
 	flag.BoolVar(&no_adjust, "hna", false, "disable heatmap scale adjust")
 	var scale_bar bool
 	flag.BoolVar(&scale_bar, "bar", false, "enable scale bar")
+	var sizeAdjust int
+	flag.IntVar(&sizeAdjust, "multof", 0, "set image size to multiple of arg (0 is disable)")
 
 	flag.Parse()
 
@@ -85,6 +87,16 @@ func main() {
 
 	s_size := s_max - s_min + 1
 	t_size := t_max - t_min + 1
+
+	if sizeAdjust > 0 {
+		if s_size%sizeAdjust != 0 {
+			s_size += sizeAdjust - s_size%sizeAdjust
+		}
+		if t_size%sizeAdjust != 0 {
+			t_size += sizeAdjust - t_size%sizeAdjust
+		}
+	}
+
 	var scale_bar_size int = 0
 	if scale_bar {
 		if t_size < 128 {
