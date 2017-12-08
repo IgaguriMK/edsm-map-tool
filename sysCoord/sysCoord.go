@@ -46,31 +46,7 @@ func WriteCoords(fileName string, coords []Coord) {
 	}
 	defer outFile.Close()
 
-	for _, coord := range coords {
-		writeBytes(outFile, toBytes(coord.X))
-		writeBytes(outFile, toBytes(coord.Y))
-		writeBytes(outFile, toBytes(coord.Z))
-	}
-}
-
-func toBytes(val float32) []byte {
-	buf := new(bytes.Buffer)
-
-	err_b := binary.Write(buf, binary.LittleEndian, val)
-	if err_b != nil {
-		fmt.Fprintf(os.Stderr, "Error: converting to binary\n    %s\n", err_b)
-		os.Exit(4)
-	}
-
-	return buf.Bytes()
-}
-
-func writeBytes(outFile *os.File, bytes []byte) {
-	_, err_w := outFile.Write(bytes)
-	if err_w != nil {
-		fmt.Fprintf(os.Stderr, "Error: failed to write\n    %s\n", err_w)
-		os.Exit(4)
-	}
+	binary.Write(outFile, binary.LittleEndian, coords)
 }
 
 func LoadCoords(file_name string) []Coord {
