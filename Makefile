@@ -5,11 +5,11 @@ else
 endif
 
 .PHONY: all
-all: coordExtract$(EXE) transform$(EXE) imaging$(EXE)
+all: systemCoord$(EXE) transform$(EXE) imaging$(EXE)
 
-.PHONY: coordExtract
-coordExtract$(EXE):
-	go build coordExtract.go
+.PHONY: systemCoord
+systemCoord$(EXE):
+	go build systemCoord.go
 
 .PHONY: transform
 transform$(EXE):
@@ -21,6 +21,6 @@ imaging$(EXE):
 
 .PHONY: clean
 clean:
-	- rm coordExtract$(EXE)
+	- rm systemCoord$(EXE)
 	- rm transform$(EXE)
 	- rm imaging$(EXE)
