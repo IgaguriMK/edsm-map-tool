@@ -21,7 +21,7 @@ const (
 
 func main() {
 	coords_file_name := flag.String("i", "coords.bin", "input file")
-	image_file_name := flag.String("o", "xz.png", "output file")
+	image_file_name := flag.String("o", "", "output file")
 	plane_name := flag.String("p", "xz", "dump plane (xz, zy, xy)")
 	var chunk_size int
 	flag.IntVar(&chunk_size, "s", 20, "pixcel size in LY")
@@ -37,6 +37,10 @@ func main() {
 	flag.IntVar(&sizeAdjust, "multof", 0, "set image size to multiple of arg (0 is disable)")
 
 	flag.Parse()
+
+	if *image_file_name == "" {
+		*image_file_name = fmt.Sprintf("%s_%d.png", *plane_name, chunk_size)
+	}
 
 	var plane Plane
 	switch *plane_name {

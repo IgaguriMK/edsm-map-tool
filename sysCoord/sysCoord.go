@@ -1,13 +1,14 @@
 package sysCoord
 
 import (
+	"bufio"
 	"bytes"
 	"encoding/binary"
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
+	"strings"
 )
 
 type Coord struct {
@@ -25,14 +26,35 @@ type SystemCoord struct {
 }
 
 func LoadSystems(fileName string) ([]SystemCoord, error) {
-	bytes, err := ioutil.ReadFile(fileName)
+	f, err := os.Open(fileName)
 	if err != nil {
 		return nil, fmt.Errorf("IO error: %s\n", err)
 	}
+	defer f.Close()
 
-	var systemCoords []SystemCoord
-	if err := json.Unmarshal(bytes, &systemCoords); err != nil {
-		return nil, fmt.Errorf("JSON error: %s\n", err)
+	sc := bufio.NewScanner(f)
+
+	systemCoords := make([]SystemCoord, 0)
+
+	for sc.Scan() {
+		line := sc.Text()
+
+		if line == "[" {
+			continue
+		}
+		if line == "]" {
+			break
+		}
+
+		line = strings.TrimPrefix(line, "    ")
+		line = strings.TrimSuffix(line, ",")
+		bytes := []byte(line)
+
+		var system SystemCoord
+		if err := json.Unmarshal(bytes, &system); err != nil {
+			return nil, fmt.Errorf("JSON error: %s\n", err)
+		}
+		systemCoords = append(systemCoords, system)
 	}
 
 	return systemCoords, nil
