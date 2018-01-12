@@ -96,5 +96,16 @@ func marker(c <-chan mark) {
 var indentCache = make([]string, 0)
 
 func indent(n int) string {
-	return ""
+	if n < len(indentCache) {
+		return indentCache[n]
+	}
+
+	if n <= 0 {
+		indentCache = append(indentCache, "")
+		return ""
+	}
+
+	v := "  " + indent(n-1)
+	indentCache = append(indentCache, v)
+	return v
 }

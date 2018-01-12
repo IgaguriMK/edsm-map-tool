@@ -61,6 +61,9 @@ func LoadSystems(fileName string) ([]SystemCoord, error) {
 }
 
 func WriteCoords(fileName string, coords []Coord) {
+	sw.StartTier(`START WriteCoords(` + fileName + `)`)
+	defer sw.EndTier(`END WriteCoords(` + fileName + `)`)
+
 	outFile, err := os.Create(fileName)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error: Cannnot open output file.\n    %s\n", err)
@@ -73,7 +76,7 @@ func WriteCoords(fileName string, coords []Coord) {
 
 func LoadCoords(fileName string) []Coord {
 	sw.StartTier(`START LoadCoords(` + fileName + `)`)
-	defer sw.StartTier(`END LoadCoords(` + fileName + `)`)
+	defer sw.EndTier(`END LoadCoords(` + fileName + `)`)
 
 	fInfo, err := os.Stat(fileName)
 	if err != nil {
