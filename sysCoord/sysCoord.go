@@ -2,11 +2,9 @@ package sysCoord
 
 import (
 	"bufio"
-	"bytes"
 	"encoding/binary"
 	"encoding/json"
 	"fmt"
-	"io"
 	"os"
 	"strings"
 
@@ -83,7 +81,7 @@ func LoadCoords(fileName string) []Coord {
 		os.Exit(1)
 	}
 	coordCount := fInfo.Size() / (4 * 3)
-	coords := make([]Coord, 0, coordCount)
+	coords := make([]Coord, coordCount)
 
 	file, err := os.Open(fileName)
 	if err != nil {
@@ -93,39 +91,7 @@ func LoadCoords(fileName string) []Coord {
 	defer file.Close()
 	sw.Mark("Open file")
 
-	buffer := make([]byte, 4*3)
-
-	for {
-		read_size, err := io.ReadFull(file, buffer)
-		if err == io.EOF {
-			break
-		}
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "Error: Cannnot read from file.\n    %s\n", err)
-			os.Exit(1)
-		}
-		if read_size < 4*3 {
-			fmt.Fprint(os.Stderr, "Error: read too few bytes.")
-			os.Exit(1)
-		}
-
-		var coord Coord
-		coord.X = decodeFloat32(buffer[0:4])
-		coord.Y = decodeFloat32(buffer[4:8])
-		coord.Z = decodeFloat32(buffer[8:12])
-
-		coords = append(coords, coord)
-	}
+	binary.Read(file, binary.LittleEndian, coords)
 
 	return coords
-}
-
-func decodeFloat32(raw []byte) float32 {
-	var val float32
-	buf := bytes.NewReader(raw)
-	err := binary.Read(buf, binary.LittleEndian, &val)
-	if err != nil {
-		panic(err)
-	}
-	return val
 }
