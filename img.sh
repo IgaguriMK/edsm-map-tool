@@ -12,8 +12,11 @@ echo "Creating 7day.bin"
 
 echo "Creating all system image"
 ./imaging.exe -i all.bin -p xz -o xz.png
+./imaging.exe -i all.bin -p xz -ht opaque -o xz_opaque.png
 ./imaging.exe -i all.bin -p xy -o xy.png
+./imaging.exe -i all.bin -p xy -ht opaque -o xy_opaque.png
 ./imaging.exe -i all.bin -p zy -o zy.png
+./imaging.exe -i all.bin -p zy -ht opaque -o zy_opaque.png
 
 echo "Creating updated system image"
 ./imaging.exe -i 7day.bin -p xz -o xz_7day.png

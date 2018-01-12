@@ -26,7 +26,7 @@ func main() {
 	var chunk_size int
 	flag.IntVar(&chunk_size, "s", 20, "pixcel size in LY")
 	curve_name := flag.String("hc", "log", "heatmap curve (liner, log)")
-	heatmap_name := flag.String("ht", "colorful", "heatmap type (colorful, coloful_noback,  white, white_red)")
+	heatmap_name := flag.String("ht", "colorful", "heatmap type (colorful, noback, opaque)")
 	var heat_scale float64
 	flag.Float64Var(&heat_scale, "hs", 0.1, "heatmap scale")
 	var no_adjust bool
@@ -70,12 +70,10 @@ func main() {
 	switch *heatmap_name {
 	case "colorful":
 		heatmap = coloful_heatmap
-	case "colorful_noback":
+	case "noback":
 		heatmap = coloful_noback_heatmap
-	case "white":
-		heatmap = white_heatmap
-	case "white_red":
-		heatmap = white_red_heatmap
+	case "opaque":
+		heatmap = coloful_opaque_heatmap
 	default:
 		fmt.Fprintln(os.Stderr, "Error: invalid heatmap name")
 		os.Exit(1)
@@ -220,18 +218,33 @@ func coloful_noback_heatmap(img *image.RGBA, s, t, s_size, t_size, s_min, t_min,
 	img.Set(s, t_size-t, color.RGBA{0, 0, 0, 255})
 }
 
-func white_heatmap(img *image.RGBA, s, t, s_size, t_size, s_min, t_min, chunk_size int, v float64) {
-	a := uint8(255 * v)
-	img.Set(s, t_size-t, color.RGBA{255, 255, 255, a})
-}
-
-func white_red_heatmap(img *image.RGBA, s, t, s_size, t_size, s_min, t_min, chunk_size int, v float64) {
-	if v < 1.0 {
-		a := uint8(255 * v)
-		img.Set(s, t_size-t, color.RGBA{255, 255, 255, a})
-	} else {
-		img.Set(s, t_size-t, color.RGBA{255, 192, 192, 255})
+func coloful_opaque_heatmap(img *image.RGBA, s, t, s_size, t_size, s_min, t_min, chunk_size int, v float64) {
+	if v > 0 {
+		r := uint8(255 * v * v)
+		g := uint8(255 * (1 - 4*(v-0.5)*(v-0.5)))
+		b := uint8(255 * (1 - v*v))
+		img.Set(s, t_size-t, color.RGBA{r, g, b, 255})
+		return
 	}
+
+	var a uint8
+	so := s + s_min
+	to := t + t_min
+	switch 0 {
+	case (so % (10000 / chunk_size)) * (to % (10000 / chunk_size)):
+		a = 64
+	case (so % (5000 / chunk_size)) * (to % (5000 / chunk_size)):
+		a = 128
+	case (so % (1000 / chunk_size)) * (to % (1000 / chunk_size)):
+		a = 164
+	case (so % (500 / chunk_size)) * (to % (500 / chunk_size)):
+		a = 176
+	case (so % (100 / chunk_size)) * (to % (100 / chunk_size)):
+		a = 184
+	default:
+		a = 192
+	}
+	img.Set(s, t_size-t, color.RGBA{a, a, a, 255})
 }
 
 func getPosByPlane(plane Plane, chunk_size int, coord sysCoord.Coord) (int, int) {
