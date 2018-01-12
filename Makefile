@@ -5,15 +5,15 @@ else
 endif
 
 .PHONY: all
-all: systemCoord$(EXE) transform$(EXE) imaging$(EXE)
+all: systemCoord transform imaging
 
-systemCoord$(EXE):
+systemCoord:
 	go build systemCoord.go
 
-transform$(EXE):
+transform:
 	go build transform.go
 
-imaging$(EXE):
+imaging:
 	go build imaging.go
 
 .PHONY: clean

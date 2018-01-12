@@ -28,17 +28,17 @@ func main() {
 		case ":cut-x":
 			min := pop(&commands)
 			max := pop(&commands)
-			command_cut(&coords, min, max, getX)
+			coords = command_cut(coords, min, max, getX)
 			fmt.Println(command, min, max)
 		case ":cut-y":
 			min := pop(&commands)
 			max := pop(&commands)
-			command_cut(&coords, min, max, getY)
+			coords = command_cut(coords, min, max, getY)
 			fmt.Println(command, min, max)
 		case ":cut-z":
 			min := pop(&commands)
 			max := pop(&commands)
-			command_cut(&coords, min, max, getZ)
+			coords = command_cut(coords, min, max, getZ)
 			fmt.Println(command, min, max)
 		case ":add":
 			x := pop(&commands)
@@ -75,7 +75,7 @@ func pop(arr *[]string) string {
 	return v
 }
 
-func command_cut(coords *[]sysCoord.Coord, min_str, max_str string, getC func(sysCoord.Coord) float32) {
+func command_cut(coords []sysCoord.Coord, min_str, max_str string, getC func(sysCoord.Coord) float32) []sysCoord.Coord {
 	min_d, err_mi := strconv.ParseFloat(min_str, 32)
 	max_d, err_ma := strconv.ParseFloat(max_str, 32)
 	if err_mi != nil || err_ma != nil {
@@ -84,20 +84,20 @@ func command_cut(coords *[]sysCoord.Coord, min_str, max_str string, getC func(sy
 	}
 
 	min, max := float32(min_d), float32(max_d)
-	normalCut(coords, min, max, getC)
+	return normalCut(coords, min, max, getC)
 }
 
-func normalCut(coords *[]sysCoord.Coord, min, max float32, getC func(sysCoord.Coord) float32) {
-	filtered := make([]sysCoord.Coord, 0)
+func normalCut(coords []sysCoord.Coord, min, max float32, getC func(sysCoord.Coord) float32) []sysCoord.Coord {
+	filtered := make([]sysCoord.Coord, 0, len(coords))
 
-	for _, c := range *coords {
+	for _, c := range coords {
 		v := getC(c)
 		if min <= v && v <= max {
 			filtered = append(filtered, c)
 		}
 	}
 
-	*coords = filtered
+	return filtered
 }
 
 func command_add(coords *[]sysCoord.Coord, xs, ys, zs string) {
