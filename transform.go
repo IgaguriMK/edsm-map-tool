@@ -7,10 +7,14 @@ import (
 	"sort"
 	"strconv"
 
-	"./sysCoord"
+	sw "github.com/IgaguriMK/allStarMap/stopwatch"
+	"github.com/IgaguriMK/allStarMap/sysCoord"
 )
 
 func main() {
+	sw.StartTier("START main()")
+	defer sw.Close("END main()")
+
 	input_file_name := flag.String("i", "coords.bin", "input file")
 	output_file_name := flag.String("o", "trans.bin", "output file")
 
@@ -18,10 +22,13 @@ func main() {
 
 	commands := flag.Args()
 
+	sw.Mark("Flag parse")
+
 	fmt.Println(*input_file_name, ">>>", *output_file_name)
 
 	coords := sysCoord.LoadCoords(*input_file_name)
-	fmt.Println("Loaded.")
+
+	sw.Mark("Coords load")
 
 	for len(commands) > 0 {
 		switch command := pop(&commands); command {
@@ -30,37 +37,43 @@ func main() {
 			max := pop(&commands)
 			coords = command_cut(coords, min, max, getX)
 			fmt.Println(command, min, max)
+			sw.Mark("cut-x")
 		case ":cut-y":
 			min := pop(&commands)
 			max := pop(&commands)
 			coords = command_cut(coords, min, max, getY)
 			fmt.Println(command, min, max)
+			sw.Mark("cut-y")
 		case ":cut-z":
 			min := pop(&commands)
 			max := pop(&commands)
 			coords = command_cut(coords, min, max, getZ)
 			fmt.Println(command, min, max)
+			sw.Mark("cut-z")
 		case ":add":
 			x := pop(&commands)
 			y := pop(&commands)
 			z := pop(&commands)
 			command_add(&coords, x, y, z)
 			fmt.Println(command, x, y, z)
+			sw.Mark("add")
 		case ":sort":
 			axis := pop(&commands)
 			command_sort(&coords, axis)
 			fmt.Println(command, axis)
+			sw.Mark("sort")
 		case ":print":
 			command_print(&coords)
 			fmt.Println(command)
+			sw.Mark("print")
 		case ":exit":
+			sw.Close("Exit")
 			os.Exit(0)
 		default:
 			fmt.Fprintf(os.Stderr, "Error: unknown command '%s'\n", command)
 		}
 	}
 
-	fmt.Println("Writing...")
 	sysCoord.WriteCoords(*output_file_name, coords)
 }
 

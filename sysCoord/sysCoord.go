@@ -9,6 +9,8 @@ import (
 	"io"
 	"os"
 	"strings"
+
+	sw "github.com/IgaguriMK/allStarMap/stopwatch"
 )
 
 type Coord struct {
@@ -71,25 +73,35 @@ func WriteCoords(fileName string, coords []Coord) {
 	binary.Write(outFile, binary.LittleEndian, coords)
 }
 
-func LoadCoords(file_name string) []Coord {
-	var coords []Coord
+func LoadCoords(fileName string) []Coord {
+	sw.StartTier(`START LoadCoords(` + fileName + `)`)
+	defer sw.StartTier(`END LoadCoords(` + fileName + `)`)
 
-	file, err_f := os.Open(file_name)
-	if err_f != nil {
-		fmt.Fprintf(os.Stderr, "Error: Cannnot open input file.\n    %s\n", err_f)
+	fInfo, err := os.Stat(fileName)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error: Cannnot get file size.\n    %s\n", err)
+		os.Exit(1)
+	}
+	coordCount := fInfo.Size() / (4 * 3)
+	coords := make([]Coord, 0, coordCount)
+
+	file, err := os.Open(fileName)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error: Cannnot open input file.\n    %s\n", err)
 		os.Exit(1)
 	}
 	defer file.Close()
+	sw.Mark("Open file")
 
 	buffer := make([]byte, 4*3)
 
 	for {
-		read_size, err_r := io.ReadFull(file, buffer)
-		if err_r == io.EOF {
+		read_size, err := io.ReadFull(file, buffer)
+		if err == io.EOF {
 			break
 		}
-		if err_r != nil {
-			fmt.Fprintf(os.Stderr, "Error: Cannnot read from file.\n    %s\n", err_r)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error: Cannnot read from file.\n    %s\n", err)
 			os.Exit(1)
 		}
 		if read_size < 4*3 {
