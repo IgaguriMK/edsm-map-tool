@@ -84,12 +84,7 @@ func command_cut(coords *[]sysCoord.Coord, min_str, max_str string, getC func(sy
 	}
 
 	min, max := float32(min_d), float32(max_d)
-
-	if isSorted(coords, getC) {
-		sortedCut(coords, min, max, getC)
-	} else {
-		normalCut(coords, min, max, getC)
-	}
+	normalCut(coords, min, max, getC)
 }
 
 func normalCut(coords *[]sysCoord.Coord, min, max float32, getC func(sysCoord.Coord) float32) {
@@ -103,40 +98,6 @@ func normalCut(coords *[]sysCoord.Coord, min, max float32, getC func(sysCoord.Co
 	}
 
 	*coords = filtered
-}
-
-func sortedCut(coords *[]sysCoord.Coord, min, max float32, getC func(sysCoord.Coord) float32) {
-	b, i, u := 0, len(*coords)/2, len(*coords)
-	for {
-		if i == 0 || i == len(*coords) {
-			break
-		}
-		if getC((*coords)[i]) <= min {
-			b, i = i, (i+u)/2
-		} else {
-			u, i = i, (b+i)/2
-		}
-		if b == i || i == u {
-			break
-		}
-	}
-	*coords = (*coords)[i:]
-
-	b, i, u = 0, len(*coords)/2, len(*coords)
-	for {
-		if i == 0 || i == len(*coords) {
-			break
-		}
-		if getC((*coords)[i]) <= max {
-			b, i = i, (i+u)/2
-		} else {
-			u, i = i, (b+i)/2
-		}
-		if b == i || i == u {
-			break
-		}
-	}
-	*coords = (*coords)[:i+1]
 }
 
 func command_add(coords *[]sysCoord.Coord, xs, ys, zs string) {
