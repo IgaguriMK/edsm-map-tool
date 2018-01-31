@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"unsafe"
 
 	sw "github.com/IgaguriMK/allStarMap/stopwatch"
 )
@@ -84,7 +85,7 @@ func LoadCoords(fileName string) []Coord {
 		fmt.Fprintf(os.Stderr, "Error: Cannnot get file size.\n    %s\n", err)
 		os.Exit(1)
 	}
-	coordCount := fInfo.Size() / (4 * 3)
+	coordCount := fInfo.Size() / int64(unsafe.Sizeof(Coord{}))
 	coords := make([]Coord, coordCount)
 
 	file, err := os.Open(fileName)

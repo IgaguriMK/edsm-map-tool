@@ -3,12 +3,18 @@ package main
 import (
 	"flag"
 	"fmt"
+	"log"
 	"os"
-	"sort"
 	"strconv"
+	"time"
 
 	sw "github.com/IgaguriMK/allStarMap/stopwatch"
 	"github.com/IgaguriMK/allStarMap/sysCoord"
+)
+
+const (
+	UITimeFormat      = "2006-01-02_15:04:05"
+	UITimeFormatShort = "2006-01-02"
 )
 
 func main() {
@@ -57,11 +63,16 @@ func main() {
 			command_add(&coords, x, y, z)
 			fmt.Println(command, x, y, z)
 			sw.Mark("add")
-		case ":sort":
-			axis := pop(&commands)
-			command_sort(&coords, axis)
-			fmt.Println(command, axis)
-			sw.Mark("sort")
+		case ":after":
+			date := pop(&commands)
+			command_after(&coords, date)
+			fmt.Println(command, date)
+			sw.Mark("after")
+		case ":before":
+			date := pop(&commands)
+			command_before(&coords, date)
+			fmt.Println(command, date)
+			sw.Mark("before")
 		case ":print":
 			command_print(&coords)
 			fmt.Println(command)
@@ -126,43 +137,52 @@ func command_add(coords *[]sysCoord.Coord, xs, ys, zs string) {
 	*coords = append(*coords, c)
 }
 
-func command_sort(coords *[]sysCoord.Coord, axis string) {
-	var getC func(sysCoord.Coord) float32
-	switch axis {
-	case "x":
-		getC = getX
-	case "y":
-		getC = getY
-	case "z":
-		getC = getZ
-	default:
-		fmt.Fprintln(os.Stderr, "Error(:sort): invalid argument")
-		os.Exit(1)
-	}
-
-	ensureSorted(coords, getC)
-}
-
 func command_print(coords *[]sysCoord.Coord) {
 	for _, c := range *coords {
 		fmt.Printf("% 6.2f, % 6.2f, % 6.2f\n", c.X, c.Y, c.Z)
 	}
 }
 
-func isSorted(coords *[]sysCoord.Coord, getC func(sysCoord.Coord) float32) bool {
-	return sort.SliceIsSorted(*coords, func(i, j int) bool {
-		return getC((*coords)[i]) < getC((*coords)[j])
-	})
-}
+func command_after(coords *[]sysCoord.Coord, date string) {
+	thres := getThres(date)
 
-func ensureSorted(coords *[]sysCoord.Coord, getC func(sysCoord.Coord) float32) {
-	if isSorted(coords, getC) {
-		return
+	filtered := make([]sysCoord.Coord, 0, len(*coords))
+	for _, c := range *coords {
+		if c.Date >= thres {
+			filtered = append(filtered, c)
+		}
 	}
 
-	sort.Slice(*coords, func(i, j int) bool {
-		return getC((*coords)[i]) < getC((*coords)[j])
-	})
+	log.Println("Hit:", len(filtered))
+	*coords = filtered
+}
+
+func command_before(coords *[]sysCoord.Coord, date string) {
+	thres := getThres(date)
+
+	filtered := make([]sysCoord.Coord, 0, len(*coords))
+
+	for _, c := range *coords {
+		if c.Date < thres {
+			filtered = append(filtered, c)
+		}
+	}
+
+	log.Println("Hit:", len(filtered))
+	*coords = filtered
+}
+
+func getThres(date string) int64 {
+	if len(date) == len(UITimeFormatShort) {
+		date = date + "_00:00:00"
+	}
+
+	thresDate, err := time.ParseInLocation(UITimeFormat, date, time.UTC)
+	if err != nil {
+		log.Fatalf("Invalid date format[%s]: %e\n", date, err)
+	}
+
+	return thresDate.Unix()
 }
 
 func getX(c sysCoord.Coord) float32 { return c.X }

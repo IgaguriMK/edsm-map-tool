@@ -12,7 +12,6 @@ import (
 
 const (
 	DumpTimeFormat = "2006-01-02 15:04:05"
-	UITimeFormat   = "2006-01-02_15:04:05"
 )
 
 func main() {
