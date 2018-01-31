@@ -26,7 +26,7 @@ func main() {
 	var chunk_size int
 	flag.IntVar(&chunk_size, "s", 20, "pixcel size in LY")
 	curve_name := flag.String("hc", "log", "heatmap curve (liner, log)")
-	heatmap_name := flag.String("ht", "colorful", "heatmap type (colorful, noback, opaque)")
+	heatmap_name := flag.String("ht", "opaque", "heatmap type (colorful, noback, opaque)")
 	var heat_scale float64
 	flag.Float64Var(&heat_scale, "hs", 0.1, "heatmap scale")
 	var no_adjust bool
