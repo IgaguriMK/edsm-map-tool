@@ -122,7 +122,7 @@ func command_add(coords *[]sysCoord.Coord, xs, ys, zs string) {
 		os.Exit(1)
 	}
 
-	c := sysCoord.Coord{float32(x), float32(y), float32(z)}
+	c := sysCoord.Coord{float32(x), float32(y), float32(z), 0}
 	*coords = append(*coords, c)
 }
 

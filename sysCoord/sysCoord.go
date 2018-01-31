@@ -12,17 +12,18 @@ import (
 )
 
 type Coord struct {
-	X float32 "json:x"
-	Y float32 "json:y"
-	Z float32 "json:z"
+	X    float32
+	Y    float32
+	Z    float32
+	Date int64
 }
 
 type SystemCoord struct {
 	//Id         uint32     `json:"id"`
 	//Id64       uint64     `json:"id64"`
 	//Name       string     `json:"name"`
-	Coord Coord `json:"coords"`
-	//Date       string     `json:"date"`
+	Coord Coord  `json:"coords"`
+	Date  string `json:"date"`
 }
 
 func LoadSystems(fileName string) ([]SystemCoord, error) {
