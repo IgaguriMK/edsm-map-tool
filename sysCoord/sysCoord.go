@@ -12,6 +12,10 @@ import (
 	sw "github.com/IgaguriMK/allStarMap/stopwatch"
 )
 
+const (
+	StreamBufferSize = 1024
+)
+
 type Coord struct {
 	X    float32
 	Y    float32
@@ -99,4 +103,59 @@ func LoadCoords(fileName string) []Coord {
 	binary.Read(file, binary.LittleEndian, coords)
 
 	return coords
+}
+
+func NewCoordStream() (*CoordWriter, *CoordReader) {
+	return NewCoordStreamCap(StreamBufferSize)
+}
+
+func NewCoordStreamCap(cap int) (*CoordWriter, *CoordReader) {
+	ch := make(chan Coord, cap)
+
+	cw := &CoordWriter{
+		ch: ch,
+	}
+	cr := &CoordReader{
+		ch:  ch,
+		buf: nil,
+	}
+
+	return cw, cr
+}
+
+type CoordWriter struct {
+	ch chan<- Coord
+}
+
+func (cw *CoordWriter) Write(coord Coord) {
+	cw.ch <- coord
+}
+
+func (cw *CoordWriter) Close() {
+	close(cw.ch)
+}
+
+type CoordReader struct {
+	ch  <-chan Coord
+	buf *Coord
+}
+
+func (cr *CoordReader) Next() bool {
+	c, ok := <-cr.ch
+	if !ok {
+		return false
+	}
+
+	cr.buf = &c
+	return true
+}
+
+func (cr *CoordReader) Read() Coord {
+	if cr.buf == nil {
+		panic("Read() must called after Next()")
+	}
+
+	c := *cr.buf
+	cr.buf = nil
+	return c
 }
