@@ -1,7 +1,7 @@
 #! /bin/bash
 
-DUMPFILE="C:\Users\igagu\Documents\EliteDangerous\EDTools\systemsWithCoordinates.json"
-DUMPFILE_7DAY="C:\Users\igagu\Documents\EliteDangerous\EDTools\systemsWithCoordinates7days.json"
+DUMPFILE="C:\Users\Igaguri\Documents\EliteDangerous\EDTools\systemsWithCoordinates.json"
+DUMPFILE_7DAY="C:\Users\Igaguri\Documents\EliteDangerous\EDTools\systemsWithCoordinates7days.json"
 
 set -eu
 

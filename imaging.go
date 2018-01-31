@@ -87,8 +87,8 @@ func main() {
 	s_max, t_max := getPosByPlane(plane, chunk_size, max)
 	s_min, t_min := getPosByPlane(plane, chunk_size, min)
 
-	s_size := s_max - s_min + 1
-	t_size := t_max - t_min + 1
+	s_size := s_max - s_min + 4
+	t_size := t_max - t_min + 4
 
 	if sizeAdjust > 0 {
 		if s_size%sizeAdjust != 0 {
