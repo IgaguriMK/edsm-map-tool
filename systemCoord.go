@@ -35,17 +35,20 @@ func main() {
 		os.Exit(2)
 	}
 
-	coords := make([]sysCoord.Coord, len(systems))
-	for i := 0; i < len(systems); i++ {
-		utc, err := time.ParseInLocation(DumpTimeFormat, systems[i].Date, time.UTC)
+	coords := make([]sysCoord.Coord, 0, len(systems))
+	for _, sys := range systems {
+		utc, err := time.ParseInLocation(DumpTimeFormat, sys.Date, time.UTC)
 		if err != nil {
 			log.Fatal(err)
 		}
 
-		coords[i].X = systems[i].Coord.X
-		coords[i].Y = systems[i].Coord.Y
-		coords[i].Z = systems[i].Coord.Z
-		coords[i].Date = utc.Unix()
+		coord := sysCoord.Coord{
+			X:    sys.Coord.X,
+			Y:    sys.Coord.Y,
+			Z:    sys.Coord.Z,
+			Date: utc.Unix(),
+		}
+		coords = append(coords, coord)
 	}
 
 	sysCoord.WriteCoords(*outFileName, coords)
