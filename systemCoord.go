@@ -32,7 +32,7 @@ func main() {
 	var wg sync.WaitGroup
 
 	sysCh := sysCoord.LoadSystems(fileName)
-	writeCh := sysCoord.WriteCoords(*outFileName, wg)
+	writeCh := sysCoord.WriteCoords(*outFileName, &wg)
 
 	for sys := range sysCh {
 		utc, err := time.ParseInLocation(DumpTimeFormat, sys.Date, time.UTC)

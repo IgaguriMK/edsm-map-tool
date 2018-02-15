@@ -32,7 +32,6 @@ func LoadSystems(fileName string) <-chan SystemCoord {
 	ch := make(chan SystemCoord, StreamBufferSize)
 
 	go func() {
-		defer close(ch)
 
 		f, err := os.Open(fileName)
 		if err != nil {
@@ -61,12 +60,14 @@ func LoadSystems(fileName string) <-chan SystemCoord {
 		if err != nil {
 			log.Fatal(err)
 		}
+
+		close(ch)
 	}()
 
 	return ch
 }
 
-func WriteCoords(fileName string, wg sync.WaitGroup) chan<- Coord {
+func WriteCoords(fileName string, wg *sync.WaitGroup) chan<- Coord {
 	ch := make(chan Coord, StreamBufferSize)
 	wg.Add(1)
 
@@ -91,8 +92,6 @@ func LoadCoords(fileName string) <-chan Coord {
 	ch := make(chan Coord, StreamBufferSize)
 
 	go func() {
-		defer close(ch)
-
 		file, err := os.Open(fileName)
 		if err != nil {
 			log.Fatal("Error: Cannnot open input file.\n    %s\n", err)
@@ -104,7 +103,7 @@ func LoadCoords(fileName string) <-chan Coord {
 			var coord Coord
 			err := binary.Read(file, binary.LittleEndian, &coord)
 			if err == io.EOF {
-				continue
+				break
 			}
 			if err != nil {
 				log.Fatal(err)
@@ -112,6 +111,7 @@ func LoadCoords(fileName string) <-chan Coord {
 
 			ch <- coord
 		}
+		close(ch)
 	}()
 
 	return ch
