@@ -7,6 +7,7 @@ import (
 	"log"
 	"os"
 	"sync"
+	"unsafe"
 )
 
 const (
@@ -115,4 +116,23 @@ func LoadCoords(fileName string) <-chan Coord {
 	}()
 
 	return ch
+}
+
+func LoadCoordsAll(fileName string) []Coord {
+	fInfo, err := os.Stat(fileName)
+	if err != nil {
+		log.Fatal("Error: Cannnot get file size:", err)
+	}
+	coordCount := fInfo.Size() / int64(unsafe.Sizeof(Coord{}))
+	coords := make([]Coord, coordCount)
+
+	file, err := os.Open(fileName)
+	if err != nil {
+		log.Fatal("Error: Cannnot open input file:", err)
+	}
+	defer file.Close()
+
+	binary.Read(file, binary.LittleEndian, coords)
+
+	return coords
 }

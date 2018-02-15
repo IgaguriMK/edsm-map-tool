@@ -81,7 +81,10 @@ func main() {
 
 	//////////////
 
-	coords := sysCoord.LoadCoords(*coords_file_name)
+	coords := make([]sysCoord.Coord, 0, 1024)
+	for c := range sysCoord.LoadCoords(*coords_file_name) {
+		coords = append(coords, c)
+	}
 	max, min := maxMin(coords)
 
 	s_max, t_max := getPosByPlane(plane, chunk_size, max)
