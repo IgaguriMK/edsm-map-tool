@@ -1,15 +1,12 @@
 package sysCoord
 
 import (
-	"bufio"
 	"encoding/binary"
 	"encoding/json"
-	"fmt"
+	"io"
+	"log"
 	"os"
-	"strings"
-	"unsafe"
-
-	sw "github.com/IgaguriMK/allStarMap/stopwatch"
+	"sync"
 )
 
 const (
@@ -31,131 +28,91 @@ type SystemCoord struct {
 	Date  string `json:"date"`
 }
 
-func LoadSystems(fileName string) ([]SystemCoord, error) {
-	f, err := os.Open(fileName)
-	if err != nil {
-		return nil, fmt.Errorf("IO error: %s\n", err)
-	}
-	defer f.Close()
+func LoadSystems(fileName string) <-chan SystemCoord {
+	ch := make(chan SystemCoord, StreamBufferSize)
 
-	sc := bufio.NewScanner(f)
+	go func() {
+		defer close(ch)
 
-	systemCoords := make([]SystemCoord, 0)
-
-	for sc.Scan() {
-		line := sc.Text()
-
-		if line == "[" {
-			continue
+		f, err := os.Open(fileName)
+		if err != nil {
+			log.Fatal("IO error:", err)
 		}
-		if line == "]" {
-			break
+		defer f.Close()
+
+		dec := json.NewDecoder(f)
+
+		_, err = dec.Token()
+		if err != nil {
+			log.Fatal(err)
 		}
 
-		line = strings.TrimPrefix(line, "    ")
-		line = strings.TrimSuffix(line, ",")
-		bytes := []byte(line)
+		for dec.More() {
+			var system SystemCoord
+			err := dec.Decode(&system)
+			if err != nil {
+				log.Fatal("JSON error:", err)
+			}
 
-		var system SystemCoord
-		if err := json.Unmarshal(bytes, &system); err != nil {
-			return nil, fmt.Errorf("JSON error: %s\n", err)
+			ch <- system
 		}
-		systemCoords = append(systemCoords, system)
-	}
 
-	return systemCoords, nil
+		_, err = dec.Token()
+		if err != nil {
+			log.Fatal(err)
+		}
+	}()
+
+	return ch
 }
 
-func WriteCoords(fileName string, coords []Coord) {
-	sw.StartTier(`START WriteCoords(` + fileName + `)`)
-	defer sw.EndTier(`END WriteCoords(` + fileName + `)`)
+func WriteCoords(fileName string, wg sync.WaitGroup) chan<- Coord {
+	ch := make(chan Coord, StreamBufferSize)
+	wg.Add(1)
 
-	outFile, err := os.Create(fileName)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error: Cannnot open output file.\n    %s\n", err)
-		os.Exit(3)
-	}
-	defer outFile.Close()
+	go func() {
+		defer wg.Done()
 
-	binary.Write(outFile, binary.LittleEndian, coords)
+		outFile, err := os.Create(fileName)
+		if err != nil {
+			log.Fatal("Error: Cannnot open output file.\n    %s\n", err)
+		}
+		defer outFile.Close()
+
+		for c := range ch {
+			binary.Write(outFile, binary.LittleEndian, c)
+		}
+	}()
+
+	return ch
 }
 
-func LoadCoords(fileName string) []Coord {
-	sw.StartTier(`START LoadCoords(` + fileName + `)`)
-	defer sw.EndTier(`END LoadCoords(` + fileName + `)`)
+func LoadCoords(fileName string) <-chan Coord {
+	ch := make(chan Coord, StreamBufferSize)
 
-	fInfo, err := os.Stat(fileName)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error: Cannnot get file size.\n    %s\n", err)
-		os.Exit(1)
-	}
-	coordCount := fInfo.Size() / int64(unsafe.Sizeof(Coord{}))
-	coords := make([]Coord, coordCount)
+	go func() {
+		defer close(ch)
 
-	file, err := os.Open(fileName)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error: Cannnot open input file.\n    %s\n", err)
-		os.Exit(1)
-	}
-	defer file.Close()
-	sw.Mark("Open file")
+		file, err := os.Open(fileName)
+		if err != nil {
+			log.Fatal("Error: Cannnot open input file.\n    %s\n", err)
+			os.Exit(1)
+		}
+		defer file.Close()
 
-	binary.Read(file, binary.LittleEndian, coords)
+		for {
+			var coord Coord
+			err := binary.Read(file, binary.LittleEndian, &coord)
+			if err == io.EOF {
+				continue
+			}
+			if err != nil {
+				log.Fatal(err)
+			}
 
-	return coords
-}
+			ch <- coord
+		}
+	}()
 
-func NewCoordStream() (*CoordWriter, *CoordReader) {
-	return NewCoordStreamCap(StreamBufferSize)
-}
-
-func NewCoordStreamCap(cap int) (*CoordWriter, *CoordReader) {
-	ch := make(chan Coord, cap)
-
-	cw := &CoordWriter{
-		ch: ch,
-	}
-	cr := &CoordReader{
-		ch:  ch,
-		buf: nil,
-	}
-
-	return cw, cr
-}
-
-type CoordWriter struct {
-	ch chan<- Coord
-}
-
-func (cw *CoordWriter) Write(coord Coord) {
-	cw.ch <- coord
-}
-
-func (cw *CoordWriter) Close() {
-	close(cw.ch)
-}
-
-type CoordReader struct {
-	ch  <-chan Coord
-	buf *Coord
-}
-
-func (cr *CoordReader) Next() bool {
-	c, ok := <-cr.ch
-	if !ok {
-		return false
-	}
-
-	cr.buf = &c
-	return true
-}
-
-func (cr *CoordReader) Read() Coord {
-	if cr.buf == nil {
-		panic("Read() must called after Next()")
-	}
-
-	c := *cr.buf
-	cr.buf = nil
-	return c
+	return ch
 }

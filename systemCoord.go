@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"sync"
 	"time"
 
 	"./sysCoord"
@@ -28,15 +29,12 @@ func main() {
 
 	fileName := args[0]
 
-	systems, err := sysCoord.LoadSystems(fileName)
+	var wg sync.WaitGroup
 
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error: input error\n    %s", err)
-		os.Exit(2)
-	}
+	sysCh := sysCoord.LoadSystems(fileName)
+	writeCh := sysCoord.WriteCoords(*outFileName, wg)
 
-	coords := make([]sysCoord.Coord, 0, len(systems))
-	for _, sys := range systems {
+	for sys := range sysCh {
 		utc, err := time.ParseInLocation(DumpTimeFormat, sys.Date, time.UTC)
 		if err != nil {
 			log.Fatal(err)
@@ -48,8 +46,9 @@ func main() {
 			Z:    sys.Coord.Z,
 			Date: utc.Unix(),
 		}
-		coords = append(coords, coord)
+		writeCh <- coord
 	}
+	close(writeCh)
 
-	sysCoord.WriteCoords(*outFileName, coords)
+	wg.Wait()
 }
