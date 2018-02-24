@@ -289,7 +289,7 @@ func hard_heatmap(img *image.RGBA, s, t, s_size, t_size, s_min, t_min, chunk_siz
 	case (so % (100 / chunk_size)) * (to % (100 / chunk_size)):
 		a = 72
 	default:
-		a = 64
+		a = 0
 	}
 	lineColor := color.RGBA{0, 0, 0, a}
 

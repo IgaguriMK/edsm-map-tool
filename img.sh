@@ -28,3 +28,5 @@ echo "Creating updated system image"
 ./imaging.exe -i 7day.bin -p xy -o xy_7day.png &
 ./imaging.exe -i 7day.bin -p zy -o zy_7day.png &
 wait
+
+./imaging.exe -i all.bin -p xz -o xz_wide.png -s 5
