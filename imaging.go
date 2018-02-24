@@ -26,7 +26,7 @@ func main() {
 	var chunk_size int
 	flag.IntVar(&chunk_size, "s", 20, "pixcel size in LY")
 	curve_name := flag.String("hc", "log", "heatmap curve (liner, log)")
-	heatmap_name := flag.String("ht", "opaque", "heatmap type (colorful, noback, opaque)")
+	heatmap_name := flag.String("ht", "opaque", "heatmap type (colorful, noback, opaque, hard)")
 	var heat_scale float64
 	flag.Float64Var(&heat_scale, "hs", 0.1, "heatmap scale")
 	var no_adjust bool
@@ -74,6 +74,8 @@ func main() {
 		heatmap = coloful_noback_heatmap
 	case "opaque":
 		heatmap = coloful_opaque_heatmap
+	case "hard":
+		heatmap = hard_heatmap
 	default:
 		fmt.Fprintln(os.Stderr, "Error: invalid heatmap name")
 		os.Exit(1)
@@ -250,6 +252,50 @@ func coloful_opaque_heatmap(img *image.RGBA, s, t, s_size, t_size, s_min, t_min,
 	img.Set(s, t_size-t, color.RGBA{a, a, a, 255})
 }
 
+func hard_heatmap(img *image.RGBA, s, t, s_size, t_size, s_min, t_min, chunk_size int, v float64) {
+	var r, g, b float64 = 0, 0, 0
+
+	switch {
+	case v == 0:
+		r, g, b = 1, 1, 1
+	case v <= 0.25:
+		g = 4 * v
+		b = 1
+	case v <= 0.5:
+		g = 1
+		b = 1 - 4*(v-0.25)
+	case v <= 0.75:
+		r = 4 * (v - 0.5)
+		g = 1
+	default:
+		r = 1
+		g = 1 - 4*(v-0.75)
+	}
+
+	baseColor := color.RGBA{uint8(255 * r), uint8(255 * g), uint8(255 * b), 255}
+
+	var a uint8
+	so := s + s_min
+	to := t + t_min
+	switch 0 {
+	case (so % (10000 / chunk_size)) * (to % (10000 / chunk_size)):
+		a = 192
+	case (so % (5000 / chunk_size)) * (to % (5000 / chunk_size)):
+		a = 128
+	case (so % (1000 / chunk_size)) * (to % (1000 / chunk_size)):
+		a = 92
+	case (so % (500 / chunk_size)) * (to % (500 / chunk_size)):
+		a = 80
+	case (so % (100 / chunk_size)) * (to % (100 / chunk_size)):
+		a = 72
+	default:
+		a = 64
+	}
+	lineColor := color.RGBA{0, 0, 0, a}
+
+	img.Set(s, t_size-t, blend(baseColor, lineColor))
+}
+
 func getPosByPlane(plane Plane, chunk_size int, coord sysCoord.Coord) (int, int) {
 	if plane == XZ {
 		return chunk(chunk_size, coord.X), chunk(chunk_size, coord.Z)
@@ -288,4 +334,26 @@ func maxMin(coords []sysCoord.Coord) (sysCoord.Coord, sysCoord.Coord) {
 	}
 
 	return max, min
+}
+
+func blend(back, front color.RGBA) color.RGBA {
+	return color.RGBA{
+		R: blend_single(back.R, front.R, front.A),
+		G: blend_single(back.G, front.G, front.A),
+		B: blend_single(back.B, front.B, front.A),
+		A: blend_alpha(back.A, front.A),
+	}
+}
+
+func blend_single(back, front, alpha uint8) uint8 {
+	b := int16(back)
+	f := int16(front)
+	a := int16(alpha)
+	return uint8((255*b + a*f - a*b) / 255)
+}
+
+func blend_alpha(back, front uint8) uint8 {
+	b := int16(back)
+	f := int16(front)
+	return uint8((255*f + 255*b - b*f) / 255)
 }
