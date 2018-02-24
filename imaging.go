@@ -154,7 +154,7 @@ func main() {
 			if v < 0.0 {
 				v = 0.0
 			}
-			heatmap(img, s, t, s_size, t_size+scale_bar_size, s_max, t_max, chunk_size, v)
+			heatmap(img, s, t, s_size, t_size+scale_bar_size, s_min, t_min, chunk_size, v)
 		}
 	}
 
@@ -165,7 +165,7 @@ func main() {
 				continue
 			}
 			v := float64(s) / float64(s_size)
-			heatmap(img, s, t, s_size, t_size+scale_bar_size, s_max, t_max, chunk_size, v)
+			heatmap(img, s, t, s_size, t_size+scale_bar_size, s_min, t_min, chunk_size, v)
 		}
 	}
 
