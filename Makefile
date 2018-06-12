@@ -5,13 +5,16 @@ else
 endif
 
 .PHONY: all
-all: systemCoord transform imaging
+all: systemCoord transform fromtext imaging
 
 systemCoord:
 	go build systemCoord.go
 
 transform:
 	go build transform.go
+
+fromtext:
+	go build fromtext.go
 
 imaging:
 	go build imaging.go

@@ -12,6 +12,8 @@ import (
 
 const (
 	StreamBufferSize = 1024
+
+	DumpTimeFormat = "2006-01-02 15:04:05"
 )
 
 type Coord struct {

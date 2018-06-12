@@ -8,7 +8,7 @@ import (
 	"sync"
 	"time"
 
-	"./sysCoord"
+	"github.com/IgaguriMK/allStarMap/sysCoord"
 )
 
 func main() {
@@ -31,7 +31,7 @@ func main() {
 	writeCh := sysCoord.WriteCoords(*outFileName, &wg)
 
 	for sys := range sysCh {
-		utc, err := time.ParseInLocation(DumpTimeFormat, sys.Date, time.UTC)
+		utc, err := time.ParseInLocation(sysCoord.DumpTimeFormat, sys.Date, time.UTC)
 		if err != nil {
 			log.Fatal(err)
 		}
