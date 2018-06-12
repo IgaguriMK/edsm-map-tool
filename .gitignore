@@ -4,6 +4,7 @@ systemCoord
 imaging
 transform
 
+*.json
 *.png
 *.bin
 *.mp4
