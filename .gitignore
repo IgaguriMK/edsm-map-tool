@@ -8,3 +8,6 @@ transform
 *.bin
 *.mp4
 *.sh
+
+systemsWithCoordinates.json
+systemsWithCoordinates7days.json
