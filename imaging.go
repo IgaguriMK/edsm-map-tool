@@ -1,14 +1,17 @@
 package main
 
 import (
-	"./sysCoord"
+	"encoding/json"
 	"flag"
 	"fmt"
 	"image"
 	"image/color"
 	"image/png"
+	"log"
 	"math"
 	"os"
+
+	"./sysCoord"
 )
 
 type plane int
@@ -32,6 +35,9 @@ func main() {
 
 	var chunkSize int
 	flag.IntVar(&chunkSize, "s", 20, "pixcel size in LY")
+
+	var boundaryFile string
+	flag.StringVar(&boundaryFile, "b", "", "Boundary file")
 
 	var curveName string
 	flag.StringVar(&curveName, "hc", "log", "heatmap curve (liner, log)")
@@ -104,11 +110,30 @@ func main() {
 	for c := range sysCoord.LoadCoords(coordsFileName) {
 		coords = append(coords, c)
 	}
-	max, min := maxMin(coords)
+
+	var max, min sysCoord.Coord
+
+	if boundaryFile != "" {
+		bf, err := os.Open(boundaryFile)
+		if err != nil {
+			log.Fatal("Error: can't open boundary file: ", err)
+		}
+		dec := json.NewDecoder(bf)
+
+		var boundary boundary
+		err = dec.Decode(&boundary)
+		if err != nil {
+			log.Fatal("Error: can't decode boundary file: ", err)
+		}
+		bf.Close()
+
+		max, min = boundary.Max(), boundary.Min()
+	} else {
+		max, min = getMaxMin(coords)
+	}
 
 	sMax, tMax := getPosByPlane(plane, chunkSize, max)
 	sMin, tMin := getPosByPlane(plane, chunkSize, min)
-
 	sSize := sMax - sMin + 4
 	tSize := tMax - tMin + 4
 
@@ -141,6 +166,14 @@ func main() {
 		s, t := getPosByPlane(plane, chunkSize, coord)
 		s -= sMin
 		t -= tMin
+
+		if s < 0 || sSize <= s {
+			continue
+		}
+		if t < 0 || tSize <= t {
+			continue
+		}
+
 		lines[t][s]++
 	}
 
@@ -330,7 +363,7 @@ func chunk(chunkSize int, val float32) int {
 	return int(val / float32(chunkSize))
 }
 
-func maxMin(coords []sysCoord.Coord) (sysCoord.Coord, sysCoord.Coord) {
+func getMaxMin(coords []sysCoord.Coord) (sysCoord.Coord, sysCoord.Coord) {
 	var max, min sysCoord.Coord
 
 	for _, c := range coords {
@@ -378,3 +411,27 @@ func blendAlpha(back, front uint8) uint8 {
 	f := int16(front)
 	return uint8((255*f + 255*b - b*f) / 255)
 }
+
+type boundary struct {
+	X maxMin `json:"x"`
+	Y maxMin `json:"y"`
+	Z maxMin `json:"z"`
+}
+
+func (b boundary) Min() sysCoord.Coord {
+	return sysCoord.Coord{
+		X: b.X[0],
+		Y: b.Y[0],
+		Z: b.Z[0],
+	}
+}
+
+func (b boundary) Max() sysCoord.Coord {
+	return sysCoord.Coord{
+		X: b.X[1],
+		Y: b.Y[1],
+		Z: b.Z[1],
+	}
+}
+
+type maxMin [2]float32
