@@ -20,30 +20,47 @@ const (
 )
 
 func main() {
-	coords_file_name := flag.String("i", "coords.bin", "input file")
-	image_file_name := flag.String("o", "", "output file")
-	plane_name := flag.String("p", "xz", "dump plane (xz, zy, xy)")
+	// flags
+	var coordsFileName string
+	flag.StringVar(&coordsFileName, "i", "coords.bin", "input file")
+
+	var imageFileName string
+	flag.StringVar(&imageFileName, "o", "", "output file")
+
+	var planeName string
+	flag.StringVar(&planeName, "p", "xz", "dump plane (xz, zy, xy)")
+
 	var chunk_size int
 	flag.IntVar(&chunk_size, "s", 20, "pixcel size in LY")
-	curve_name := flag.String("hc", "log", "heatmap curve (liner, log)")
-	heatmap_name := flag.String("ht", "opaque", "heatmap type (colorful, noback, opaque, hard)")
+
+	var curveName string
+	flag.StringVar(&curveName, "hc", "log", "heatmap curve (liner, log)")
+
+	var heatmapName string
+	flag.StringVar(&heatmapName, "ht", "opaque", "heatmap type (colorful, noback, opaque, hard)")
+
 	var heat_scale float64
 	flag.Float64Var(&heat_scale, "hs", 0.1, "heatmap scale")
+
 	var no_adjust bool
 	flag.BoolVar(&no_adjust, "hna", false, "disable heatmap scale adjust")
+
 	var scale_bar bool
 	flag.BoolVar(&scale_bar, "bar", false, "enable scale bar")
+
 	var sizeAdjust int
 	flag.IntVar(&sizeAdjust, "multof", 0, "set image size to multiple of arg (0 is disable)")
 
+	// flag parse
 	flag.Parse()
 
-	if *image_file_name == "" {
-		*image_file_name = fmt.Sprintf("%s_%d.png", *plane_name, chunk_size)
+	// main
+	if imageFileName == "" {
+		imageFileName = fmt.Sprintf("%s_%d.png", planeName, chunk_size)
 	}
 
 	var plane Plane
-	switch *plane_name {
+	switch planeName {
 	case "xz":
 		plane = XZ
 	case "zy":
@@ -51,12 +68,12 @@ func main() {
 	case "xy":
 		plane = XY
 	default:
-		fmt.Fprintf(os.Stderr, "Error: Invalid plane name'%s'", *plane_name)
+		fmt.Fprintf(os.Stderr, "Error: Invalid plane name'%s'", planeName)
 		os.Exit(1)
 	}
 
 	var curve func(float64) float64
-	switch *curve_name {
+	switch curveName {
 	case "log":
 		curve = func(v float64) float64 { return math.Log10(v + 1) }
 	case "liner":
@@ -67,7 +84,7 @@ func main() {
 	}
 
 	var heatmap func(*image.RGBA, int, int, int, int, int, int, int, float64)
-	switch *heatmap_name {
+	switch heatmapName {
 	case "colorful":
 		heatmap = coloful_heatmap
 	case "noback":
@@ -84,7 +101,7 @@ func main() {
 	//////////////
 
 	coords := make([]sysCoord.Coord, 0, 1024)
-	for c := range sysCoord.LoadCoords(*coords_file_name) {
+	for c := range sysCoord.LoadCoords(coordsFileName) {
 		coords = append(coords, c)
 	}
 	max, min := maxMin(coords)
@@ -169,7 +186,7 @@ func main() {
 		}
 	}
 
-	img_file, err_f := os.Create(*image_file_name)
+	img_file, err_f := os.Create(imageFileName)
 	if err_f != nil {
 		fmt.Fprintf(os.Stderr, "Error: Cannnot open file.\n    %s", err_f)
 		os.Exit(1)
