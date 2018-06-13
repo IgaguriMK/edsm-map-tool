@@ -11,12 +11,12 @@ import (
 	"os"
 )
 
-type Plane int
+type plane int
 
 const (
-	XZ = iota
-	ZY
-	XY
+	xz plane = iota
+	zy
+	xy
 )
 
 func main() {
@@ -30,8 +30,8 @@ func main() {
 	var planeName string
 	flag.StringVar(&planeName, "p", "xz", "dump plane (xz, zy, xy)")
 
-	var chunk_size int
-	flag.IntVar(&chunk_size, "s", 20, "pixcel size in LY")
+	var chunkSize int
+	flag.IntVar(&chunkSize, "s", 20, "pixcel size in LY")
 
 	var curveName string
 	flag.StringVar(&curveName, "hc", "log", "heatmap curve (liner, log)")
@@ -39,14 +39,14 @@ func main() {
 	var heatmapName string
 	flag.StringVar(&heatmapName, "ht", "opaque", "heatmap type (colorful, noback, opaque, hard)")
 
-	var heat_scale float64
-	flag.Float64Var(&heat_scale, "hs", 0.1, "heatmap scale")
+	var heatStcale float64
+	flag.Float64Var(&heatStcale, "hs", 0.1, "heatmap scale")
 
-	var no_adjust bool
-	flag.BoolVar(&no_adjust, "hna", false, "disable heatmap scale adjust")
+	var noAdjust bool
+	flag.BoolVar(&noAdjust, "hna", false, "disable heatmap scale adjust")
 
-	var scale_bar bool
-	flag.BoolVar(&scale_bar, "bar", false, "enable scale bar")
+	var scaleVar bool
+	flag.BoolVar(&scaleVar, "bar", false, "enable scale bar")
 
 	var sizeAdjust int
 	flag.IntVar(&sizeAdjust, "multof", 0, "set image size to multiple of arg (0 is disable)")
@@ -56,17 +56,17 @@ func main() {
 
 	// main
 	if imageFileName == "" {
-		imageFileName = fmt.Sprintf("%s_%d.png", planeName, chunk_size)
+		imageFileName = fmt.Sprintf("%s_%d.png", planeName, chunkSize)
 	}
 
-	var plane Plane
+	var plane plane
 	switch planeName {
 	case "xz":
-		plane = XZ
+		plane = xz
 	case "zy":
-		plane = ZY
+		plane = zy
 	case "xy":
-		plane = XY
+		plane = xy
 	default:
 		fmt.Fprintf(os.Stderr, "Error: Invalid plane name'%s'", planeName)
 		os.Exit(1)
@@ -86,13 +86,13 @@ func main() {
 	var heatmap func(*image.RGBA, int, int, int, int, int, int, int, float64)
 	switch heatmapName {
 	case "colorful":
-		heatmap = coloful_heatmap
+		heatmap = colofulHeatmap
 	case "noback":
-		heatmap = coloful_noback_heatmap
+		heatmap = colofulNobackHeatmap
 	case "opaque":
-		heatmap = coloful_opaque_heatmap
+		heatmap = colofulOpaqueHeatmap
 	case "hard":
-		heatmap = hard_heatmap
+		heatmap = hardHeatmap
 	default:
 		fmt.Fprintln(os.Stderr, "Error: invalid heatmap name")
 		os.Exit(1)
@@ -106,170 +106,170 @@ func main() {
 	}
 	max, min := maxMin(coords)
 
-	s_max, t_max := getPosByPlane(plane, chunk_size, max)
-	s_min, t_min := getPosByPlane(plane, chunk_size, min)
+	sMax, tMax := getPosByPlane(plane, chunkSize, max)
+	sMin, tMin := getPosByPlane(plane, chunkSize, min)
 
-	s_size := s_max - s_min + 4
-	t_size := t_max - t_min + 4
+	sSize := sMax - sMin + 4
+	tSize := tMax - tMin + 4
 
 	if sizeAdjust > 0 {
-		if s_size%sizeAdjust != 0 {
-			s_size += sizeAdjust - s_size%sizeAdjust
+		if sSize%sizeAdjust != 0 {
+			sSize += sizeAdjust - sSize%sizeAdjust
 		}
-		if t_size%sizeAdjust != 0 {
-			t_size += sizeAdjust - t_size%sizeAdjust
+		if tSize%sizeAdjust != 0 {
+			tSize += sizeAdjust - tSize%sizeAdjust
 		}
 	}
 
-	var scale_bar_size int = 0
-	if scale_bar {
-		if t_size < 128 {
-			scale_bar_size = 4
-		} else if t_size > 1024 {
-			scale_bar_size = 32
+	scaleVarSize := 0
+	if scaleVar {
+		if tSize < 128 {
+			scaleVarSize = 4
+		} else if tSize > 1024 {
+			scaleVarSize = 32
 		} else {
-			scale_bar_size = t_size / 32
+			scaleVarSize = tSize / 32
 		}
 	}
 
-	lines := make([][]float64, t_size)
-	for t := 0; t < t_size; t++ {
-		lines[t] = make([]float64, s_size)
+	lines := make([][]float64, tSize)
+	for t := 0; t < tSize; t++ {
+		lines[t] = make([]float64, sSize)
 	}
 
 	for _, coord := range coords {
-		s, t := getPosByPlane(plane, chunk_size, coord)
-		s -= s_min
-		t -= t_min
-		lines[t][s] += 1
+		s, t := getPosByPlane(plane, chunkSize, coord)
+		s -= sMin
+		t -= tMin
+		lines[t][s]++
 	}
 
-	var v_max float64 = 0.0
-	for t := 0; t < t_size; t++ {
-		for s := 0; s < s_size; s++ {
+	var vMax float64
+	for t := 0; t < tSize; t++ {
+		for s := 0; s < sSize; s++ {
 			v := curve(lines[t][s])
 			lines[t][s] = v
-			if v > v_max {
-				v_max = v
+			if v > vMax {
+				vMax = v
 			}
 		}
 	}
-	fmt.Println("Heat max:", v_max)
-	if !no_adjust && v_max > heat_scale {
+	fmt.Println("Heat max:", vMax)
+	if !noAdjust && vMax > heatStcale {
 		fmt.Println("Heat scale adjusted to heat max.")
-		heat_scale = v_max
+		heatStcale = vMax
 	}
 
-	img := image.NewRGBA(image.Rect(0, 0, s_size, t_size+scale_bar_size))
+	img := image.NewRGBA(image.Rect(0, 0, sSize, tSize+scaleVarSize))
 
-	for t := 0; t < t_size; t++ {
-		for s := 0; s < s_size; s++ {
-			v := lines[t][s] / heat_scale
+	for t := 0; t < tSize; t++ {
+		for s := 0; s < sSize; s++ {
+			v := lines[t][s] / heatStcale
 			if v > 1.0 {
 				v = 1.0
 			}
 			if v < 0.0 {
 				v = 0.0
 			}
-			heatmap(img, s, t, s_size, t_size+scale_bar_size, s_min, t_min, chunk_size, v)
+			heatmap(img, s, t, sSize, tSize+scaleVarSize, sMin, tMin, chunkSize, v)
 		}
 	}
 
-	for t := t_size; t < (t_size + scale_bar_size); t++ {
-		for s := 0; s < s_size; s++ {
-			if t == t_size {
-				img.Set(s, t_size-t, color.RGBA{255, 255, 255, 255})
+	for t := tSize; t < (tSize + scaleVarSize); t++ {
+		for s := 0; s < sSize; s++ {
+			if t == tSize {
+				img.Set(s, tSize-t, color.RGBA{255, 255, 255, 255})
 				continue
 			}
-			v := float64(s) / float64(s_size)
-			heatmap(img, s, t, s_size, t_size+scale_bar_size, s_min, t_min, chunk_size, v)
+			v := float64(s) / float64(sSize)
+			heatmap(img, s, t, sSize, tSize+scaleVarSize, sMin, tMin, chunkSize, v)
 		}
 	}
 
-	img_file, err_f := os.Create(imageFileName)
-	if err_f != nil {
-		fmt.Fprintf(os.Stderr, "Error: Cannnot open file.\n    %s", err_f)
+	imgFile, err := os.Create(imageFileName)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error: Cannnot open file.\n    %s", err)
 		os.Exit(1)
 	}
-	defer img_file.Close()
+	defer imgFile.Close()
 
-	if err_io := png.Encode(img_file, img); err_io != nil {
-		fmt.Fprintf(os.Stderr, "Error: Cannnot write image.\n    %s", err_io)
+	if err := png.Encode(imgFile, img); err != nil {
+		fmt.Fprintf(os.Stderr, "Error: Cannnot write image.\n    %s", err)
 		os.Exit(1)
 	}
 }
 
-func coloful_heatmap(img *image.RGBA, s, t, s_size, t_size, s_min, t_min, chunk_size int, v float64) {
+func colofulHeatmap(img *image.RGBA, s, t, sSize, tSize, sMin, tMin, chunkSize int, v float64) {
 	if v > 0 {
 		r := uint8(255 * v * v)
 		g := uint8(255 * (1 - 4*(v-0.5)*(v-0.5)))
 		b := uint8(255 * (1 - v*v))
-		img.Set(s, t_size-t, color.RGBA{r, g, b, 255})
+		img.Set(s, tSize-t, color.RGBA{r, g, b, 255})
 		return
 	}
 
 	var a uint8
-	so := s + s_min
-	to := t + t_min
+	so := s + sMin
+	to := t + tMin
 	switch 0 {
-	case (so % (10000 / chunk_size)) * (to % (10000 / chunk_size)):
+	case (so % (10000 / chunkSize)) * (to % (10000 / chunkSize)):
 		a = 192
-	case (so % (5000 / chunk_size)) * (to % (5000 / chunk_size)):
+	case (so % (5000 / chunkSize)) * (to % (5000 / chunkSize)):
 		a = 128
-	case (so % (1000 / chunk_size)) * (to % (1000 / chunk_size)):
+	case (so % (1000 / chunkSize)) * (to % (1000 / chunkSize)):
 		a = 92
-	case (so % (500 / chunk_size)) * (to % (500 / chunk_size)):
+	case (so % (500 / chunkSize)) * (to % (500 / chunkSize)):
 		a = 80
-	case (so % (100 / chunk_size)) * (to % (100 / chunk_size)):
+	case (so % (100 / chunkSize)) * (to % (100 / chunkSize)):
 		a = 72
 	default:
 		a = 64
 	}
-	img.Set(s, t_size-t, color.RGBA{0, 0, 0, a})
+	img.Set(s, tSize-t, color.RGBA{0, 0, 0, a})
 }
 
-func coloful_noback_heatmap(img *image.RGBA, s, t, s_size, t_size, s_min, t_min, chunk_size int, v float64) {
+func colofulNobackHeatmap(img *image.RGBA, s, t, sSize, tSize, sMin, tMin, chunkSize int, v float64) {
 	if v > 0 {
 		r := uint8(255 * v * v)
 		g := uint8(255 * (1 - 4*(v-0.5)*(v-0.5)))
 		b := uint8(255 * (1 - v*v))
-		img.Set(s, t_size-t, color.RGBA{r, g, b, 255})
+		img.Set(s, tSize-t, color.RGBA{r, g, b, 255})
 		return
 	}
 
-	img.Set(s, t_size-t, color.RGBA{0, 0, 0, 255})
+	img.Set(s, tSize-t, color.RGBA{0, 0, 0, 255})
 }
 
-func coloful_opaque_heatmap(img *image.RGBA, s, t, s_size, t_size, s_min, t_min, chunk_size int, v float64) {
+func colofulOpaqueHeatmap(img *image.RGBA, s, t, sSize, tSize, sMin, tMin, chunkSize int, v float64) {
 	if v > 0 {
 		r := uint8(255 * v * v)
 		g := uint8(255 * (1 - 4*(v-0.5)*(v-0.5)))
 		b := uint8(255 * (1 - v*v))
-		img.Set(s, t_size-t, color.RGBA{r, g, b, 255})
+		img.Set(s, tSize-t, color.RGBA{r, g, b, 255})
 		return
 	}
 
 	var a uint8
-	so := s + s_min
-	to := t + t_min
+	so := s + sMin
+	to := t + tMin
 	switch 0 {
-	case (so % (10000 / chunk_size)) * (to % (10000 / chunk_size)):
+	case (so % (10000 / chunkSize)) * (to % (10000 / chunkSize)):
 		a = 64
-	case (so % (5000 / chunk_size)) * (to % (5000 / chunk_size)):
+	case (so % (5000 / chunkSize)) * (to % (5000 / chunkSize)):
 		a = 128
-	case (so % (1000 / chunk_size)) * (to % (1000 / chunk_size)):
+	case (so % (1000 / chunkSize)) * (to % (1000 / chunkSize)):
 		a = 164
-	case (so % (500 / chunk_size)) * (to % (500 / chunk_size)):
+	case (so % (500 / chunkSize)) * (to % (500 / chunkSize)):
 		a = 176
-	case (so % (100 / chunk_size)) * (to % (100 / chunk_size)):
+	case (so % (100 / chunkSize)) * (to % (100 / chunkSize)):
 		a = 184
 	default:
 		a = 192
 	}
-	img.Set(s, t_size-t, color.RGBA{a, a, a, 255})
+	img.Set(s, tSize-t, color.RGBA{a, a, a, 255})
 }
 
-func hard_heatmap(img *image.RGBA, s, t, s_size, t_size, s_min, t_min, chunk_size int, v float64) {
+func hardHeatmap(img *image.RGBA, s, t, sSize, tSize, sMin, tMin, chunkSize int, v float64) {
 	var r, g, b float64 = 0, 0, 0
 
 	switch {
@@ -292,38 +292,42 @@ func hard_heatmap(img *image.RGBA, s, t, s_size, t_size, s_min, t_min, chunk_siz
 	baseColor := color.RGBA{uint8(255 * r), uint8(255 * g), uint8(255 * b), 255}
 
 	var a uint8
-	so := s + s_min
-	to := t + t_min
+	so := s + sMin
+	to := t + tMin
 	switch 0 {
-	case (so % (10000 / chunk_size)) * (to % (10000 / chunk_size)):
+	case (so % (10000 / chunkSize)) * (to % (10000 / chunkSize)):
 		a = 192
-	case (so % (5000 / chunk_size)) * (to % (5000 / chunk_size)):
+	case (so % (5000 / chunkSize)) * (to % (5000 / chunkSize)):
 		a = 128
-	case (so % (1000 / chunk_size)) * (to % (1000 / chunk_size)):
+	case (so % (1000 / chunkSize)) * (to % (1000 / chunkSize)):
 		a = 92
-	case (so % (500 / chunk_size)) * (to % (500 / chunk_size)):
+	case (so % (500 / chunkSize)) * (to % (500 / chunkSize)):
 		a = 80
-	case (so % (100 / chunk_size)) * (to % (100 / chunk_size)):
+	case (so % (100 / chunkSize)) * (to % (100 / chunkSize)):
 		a = 72
 	default:
 		a = 0
 	}
 	lineColor := color.RGBA{0, 0, 0, a}
 
-	img.Set(s, t_size-t, blend(baseColor, lineColor))
+	img.Set(s, tSize-t, blend(baseColor, lineColor))
 }
 
-func getPosByPlane(plane Plane, chunk_size int, coord sysCoord.Coord) (int, int) {
-	if plane == XZ {
-		return chunk(chunk_size, coord.X), chunk(chunk_size, coord.Z)
-	} else if plane == ZY {
-		return chunk(chunk_size, coord.Z), chunk(chunk_size, coord.Y)
+func getPosByPlane(plane plane, chunkSize int, coord sysCoord.Coord) (int, int) {
+	switch plane {
+	case xz:
+		return chunk(chunkSize, coord.X), chunk(chunkSize, coord.Z)
+	case zy:
+		return chunk(chunkSize, coord.Z), chunk(chunkSize, coord.Y)
+	case xy:
+		return chunk(chunkSize, coord.X), chunk(chunkSize, coord.Y)
+	default:
+		panic("Inlvalid plane value")
 	}
-	return chunk(chunk_size, coord.X), chunk(chunk_size, coord.Y)
 }
 
-func chunk(chunk_size int, val float32) int {
-	return int(val / float32(chunk_size))
+func chunk(chunkSize int, val float32) int {
+	return int(val / float32(chunkSize))
 }
 
 func maxMin(coords []sysCoord.Coord) (sysCoord.Coord, sysCoord.Coord) {
@@ -355,21 +359,21 @@ func maxMin(coords []sysCoord.Coord) (sysCoord.Coord, sysCoord.Coord) {
 
 func blend(back, front color.RGBA) color.RGBA {
 	return color.RGBA{
-		R: blend_single(back.R, front.R, front.A),
-		G: blend_single(back.G, front.G, front.A),
-		B: blend_single(back.B, front.B, front.A),
-		A: blend_alpha(back.A, front.A),
+		R: brendSingle(back.R, front.R, front.A),
+		G: brendSingle(back.G, front.G, front.A),
+		B: brendSingle(back.B, front.B, front.A),
+		A: blendAlpha(back.A, front.A),
 	}
 }
 
-func blend_single(back, front, alpha uint8) uint8 {
+func brendSingle(back, front, alpha uint8) uint8 {
 	b := int16(back)
 	f := int16(front)
 	a := int16(alpha)
 	return uint8((255*b + a*f - a*b) / 255)
 }
 
-func blend_alpha(back, front uint8) uint8 {
+func blendAlpha(back, front uint8) uint8 {
 	b := int16(back)
 	f := int16(front)
 	return uint8((255*f + 255*b - b*f) / 255)
