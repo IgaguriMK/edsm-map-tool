@@ -43,7 +43,10 @@ func main() {
 	flag.StringVar(&curveName, "hc", "log", "heatmap curve (liner, log)")
 
 	var heatmapName string
-	flag.StringVar(&heatmapName, "ht", "opaque", "heatmap type (colorful, noback, opaque, hard)")
+	flag.StringVar(&heatmapName, "ht", "colorful", "heatmap type (colorful, hard)")
+
+	var backgroundName string
+	flag.StringVar(&backgroundName, "hb", "trans", "background type (trans, black, none)")
 
 	var heatStcale float64
 	flag.Float64Var(&heatStcale, "hs", 0.1, "heatmap scale")
@@ -93,15 +96,34 @@ func main() {
 	switch heatmapName {
 	case "colorful":
 		heatmap = colofulHeatmap
-	case "noback":
-		heatmap = colofulNobackHeatmap
-	case "opaque":
-		heatmap = colofulOpaqueHeatmap
 	case "hard":
 		heatmap = hardHeatmap
 	default:
-		fmt.Fprintln(os.Stderr, "Error: invalid heatmap name")
-		os.Exit(1)
+		log.Fatalf("Unknown heatmap name: %q", heatmapName)
+	}
+
+	background := noDraw
+	frontLine := noDraw
+
+	switch backgroundName {
+	case "trans":
+		background = transBackground
+	case "black":
+		background = blackBackground
+	case "white":
+		background = whiteBackground
+	case "front":
+		frontLine = blackFrontLine
+	case "black_front":
+		background = plainBlackBackground
+		frontLine = whiteFrontLine
+	case "white_front":
+		background = plainWhiteBackground
+		frontLine = blackFrontLine
+	case "none":
+		break
+	default:
+		log.Fatalf("Unknown background name: %q", backgroundName)
 	}
 
 	//////////////
@@ -204,7 +226,9 @@ func main() {
 			if v < 0.0 {
 				v = 0.0
 			}
+			background(img, s, t, sSize, tSize+scaleVarSize, sMin, tMin, chunkSize)
 			heatmap(img, s, t, sSize, tSize+scaleVarSize, sMin, tMin, chunkSize, v)
+			frontLine(img, s, t, sSize, tSize+scaleVarSize, sMin, tMin, chunkSize)
 		}
 	}
 
@@ -232,74 +256,15 @@ func main() {
 	}
 }
 
+//// Heatmap ////
+
 func colofulHeatmap(img *image.RGBA, s, t, sSize, tSize, sMin, tMin, chunkSize int, v float64) {
 	if v > 0 {
 		r := uint8(255 * v * v)
 		g := uint8(255 * (1 - 4*(v-0.5)*(v-0.5)))
 		b := uint8(255 * (1 - v*v))
 		img.Set(s, tSize-t, color.RGBA{r, g, b, 255})
-		return
 	}
-
-	var a uint8
-	so := s + sMin
-	to := t + tMin
-	switch 0 {
-	case (so % (10000 / chunkSize)) * (to % (10000 / chunkSize)):
-		a = 192
-	case (so % (5000 / chunkSize)) * (to % (5000 / chunkSize)):
-		a = 128
-	case (so % (1000 / chunkSize)) * (to % (1000 / chunkSize)):
-		a = 92
-	case (so % (500 / chunkSize)) * (to % (500 / chunkSize)):
-		a = 80
-	case (so % (100 / chunkSize)) * (to % (100 / chunkSize)):
-		a = 72
-	default:
-		a = 64
-	}
-	img.Set(s, tSize-t, color.RGBA{0, 0, 0, a})
-}
-
-func colofulNobackHeatmap(img *image.RGBA, s, t, sSize, tSize, sMin, tMin, chunkSize int, v float64) {
-	if v > 0 {
-		r := uint8(255 * v * v)
-		g := uint8(255 * (1 - 4*(v-0.5)*(v-0.5)))
-		b := uint8(255 * (1 - v*v))
-		img.Set(s, tSize-t, color.RGBA{r, g, b, 255})
-		return
-	}
-
-	img.Set(s, tSize-t, color.RGBA{0, 0, 0, 255})
-}
-
-func colofulOpaqueHeatmap(img *image.RGBA, s, t, sSize, tSize, sMin, tMin, chunkSize int, v float64) {
-	if v > 0 {
-		r := uint8(255 * v * v)
-		g := uint8(255 * (1 - 4*(v-0.5)*(v-0.5)))
-		b := uint8(255 * (1 - v*v))
-		img.Set(s, tSize-t, color.RGBA{r, g, b, 255})
-		return
-	}
-
-	var a uint8
-	so := s + sMin
-	to := t + tMin
-	switch 0 {
-	case (so % (10000 / chunkSize)) * (to % (10000 / chunkSize)):
-		a = 64
-	case (so % (5000 / chunkSize)) * (to % (5000 / chunkSize)):
-		a = 128
-	case (so % (1000 / chunkSize)) * (to % (1000 / chunkSize)):
-		a = 164
-	case (so % (500 / chunkSize)) * (to % (500 / chunkSize)):
-		a = 176
-	case (so % (100 / chunkSize)) * (to % (100 / chunkSize)):
-		a = 184
-	default:
-		a = 192
-	}
-	img.Set(s, tSize-t, color.RGBA{a, a, a, 255})
 }
 
 func hardHeatmap(img *image.RGBA, s, t, sSize, tSize, sMin, tMin, chunkSize int, v float64) {
@@ -321,8 +286,80 @@ func hardHeatmap(img *image.RGBA, s, t, sSize, tSize, sMin, tMin, chunkSize int,
 		r = 1
 		g = 1 - 4*(v-0.75)
 	}
+	img.Set(s, tSize-t, color.RGBA{uint8(255 * r), uint8(255 * g), uint8(255 * b), 255})
 
-	baseColor := color.RGBA{uint8(255 * r), uint8(255 * g), uint8(255 * b), 255}
+}
+
+//// Background ////
+
+func transBackground(img *image.RGBA, s, t, sSize, tSize, sMin, tMin, chunkSize int) {
+	var a uint8
+	so := s + sMin
+	to := t + tMin
+	switch 0 {
+	case (so % (10000 / chunkSize)) * (to % (10000 / chunkSize)):
+		a = 192
+	case (so % (5000 / chunkSize)) * (to % (5000 / chunkSize)):
+		a = 128
+	case (so % (1000 / chunkSize)) * (to % (1000 / chunkSize)):
+		a = 92
+	case (so % (500 / chunkSize)) * (to % (500 / chunkSize)):
+		a = 32
+	case (so % (100 / chunkSize)) * (to % (100 / chunkSize)):
+		a = 16
+	default:
+		a = 0
+	}
+	img.Set(s, tSize-t, color.RGBA{0, 0, 0, a})
+}
+
+func blackBackground(img *image.RGBA, s, t, sSize, tSize, sMin, tMin, chunkSize int) {
+	var a uint8
+	so := s + sMin
+	to := t + tMin
+	switch 0 {
+	case (so % (10000 / chunkSize)) * (to % (10000 / chunkSize)):
+		a = 128
+	case (so % (5000 / chunkSize)) * (to % (5000 / chunkSize)):
+		a = 92
+	case (so % (1000 / chunkSize)) * (to % (1000 / chunkSize)):
+		a = 64
+	case (so % (500 / chunkSize)) * (to % (500 / chunkSize)):
+		a = 32
+	case (so % (100 / chunkSize)) * (to % (100 / chunkSize)):
+		a = 16
+	default:
+		a = 0
+	}
+	img.Set(s, tSize-t, color.RGBA{a, a, a, 255})
+}
+
+func whiteBackground(img *image.RGBA, s, t, sSize, tSize, sMin, tMin, chunkSize int) {
+	var a uint8
+	so := s + sMin
+	to := t + tMin
+	switch 0 {
+	case (so % (10000 / chunkSize)) * (to % (10000 / chunkSize)):
+		a = 128
+	case (so % (5000 / chunkSize)) * (to % (5000 / chunkSize)):
+		a = 92
+	case (so % (1000 / chunkSize)) * (to % (1000 / chunkSize)):
+		a = 64
+	case (so % (500 / chunkSize)) * (to % (500 / chunkSize)):
+		a = 32
+	case (so % (100 / chunkSize)) * (to % (100 / chunkSize)):
+		a = 16
+	default:
+		a = 0
+	}
+	img.Set(s, tSize-t, color.RGBA{255 - a, 255 - a, 255 - a, 255})
+}
+
+func blackFrontLine(img *image.RGBA, s, t, sSize, tSize, sMin, tMin, chunkSize int) {
+	baseColor, ok := img.At(s, tSize-t).(color.RGBA)
+	if !ok {
+		log.Fatal("Color convert error")
+	}
 
 	var a uint8
 	so := s + sMin
@@ -335,9 +372,9 @@ func hardHeatmap(img *image.RGBA, s, t, sSize, tSize, sMin, tMin, chunkSize int,
 	case (so % (1000 / chunkSize)) * (to % (1000 / chunkSize)):
 		a = 92
 	case (so % (500 / chunkSize)) * (to % (500 / chunkSize)):
-		a = 80
+		a = 32
 	case (so % (100 / chunkSize)) * (to % (100 / chunkSize)):
-		a = 72
+		a = 16
 	default:
 		a = 0
 	}
@@ -345,6 +382,47 @@ func hardHeatmap(img *image.RGBA, s, t, sSize, tSize, sMin, tMin, chunkSize int,
 
 	img.Set(s, tSize-t, blend(baseColor, lineColor))
 }
+
+func whiteFrontLine(img *image.RGBA, s, t, sSize, tSize, sMin, tMin, chunkSize int) {
+	baseColor, ok := img.At(s, tSize-t).(color.RGBA)
+	if !ok {
+		log.Fatal("Color convert error")
+	}
+
+	var a uint8
+	so := s + sMin
+	to := t + tMin
+	switch 0 {
+	case (so % (10000 / chunkSize)) * (to % (10000 / chunkSize)):
+		a = 192
+	case (so % (5000 / chunkSize)) * (to % (5000 / chunkSize)):
+		a = 128
+	case (so % (1000 / chunkSize)) * (to % (1000 / chunkSize)):
+		a = 92
+	case (so % (500 / chunkSize)) * (to % (500 / chunkSize)):
+		a = 32
+	case (so % (100 / chunkSize)) * (to % (100 / chunkSize)):
+		a = 16
+	default:
+		a = 0
+	}
+	lineColor := color.RGBA{255, 255, 255, a}
+
+	img.Set(s, tSize-t, blend(baseColor, lineColor))
+}
+
+func plainBlackBackground(img *image.RGBA, s, t, sSize, tSize, sMin, tMin, chunkSize int) {
+	img.Set(s, tSize-t, color.RGBA{0, 0, 0, 255})
+}
+
+func plainWhiteBackground(img *image.RGBA, s, t, sSize, tSize, sMin, tMin, chunkSize int) {
+	img.Set(s, tSize-t, color.RGBA{255, 255, 255, 255})
+}
+
+func noDraw(img *image.RGBA, s, t, sSize, tSize, sMin, tMin, chunkSize int) {
+}
+
+//// Other ////
 
 func getPosByPlane(plane plane, chunkSize int, coord sysCoord.Coord) (int, int) {
 	switch plane {
