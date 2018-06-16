@@ -247,7 +247,6 @@ func (r rot) Filter(ch <-chan sysCoord.Coord, args *argList) <-chan sysCoord.Coo
 	shifted := make(chan sysCoord.Coord, sysCoord.StreamBufferSize)
 
 	go func() {
-		cnt := 0
 		for c := range ch {
 			rc := sysCoord.Coord{
 				X:    m[0][0]*c.X + m[0][1]*c.Y + m[0][2]*c.Z,
@@ -257,7 +256,6 @@ func (r rot) Filter(ch <-chan sysCoord.Coord, args *argList) <-chan sysCoord.Coo
 			}
 			shifted <- rc
 		}
-		log.Println("Hit:", cnt)
 		close(shifted)
 	}()
 
