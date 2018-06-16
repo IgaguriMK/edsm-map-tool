@@ -40,14 +40,16 @@ func main() {
 	var wg sync.WaitGroup
 	writeCh := sysCoord.WriteCoords(outputFileName, &wg)
 
+	lineNum := 1
 	for sc.Scan() {
 		line := sc.Text()
+		lineNum++
 
 		fields := strings.Split(line, "\t")
 
 		utc, err := time.ParseInLocation(sysCoord.DumpTimeFormat, fields[3], time.UTC)
 		if err != nil {
-			log.Fatal(err)
+			log.Fatalf("line [%d] %s", lineNum, err)
 		}
 
 		writeCh <- sysCoord.Coord{
